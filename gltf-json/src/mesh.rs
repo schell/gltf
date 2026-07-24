@@ -200,10 +200,12 @@ pub struct MorphTarget {
     /// XYZ vertex tangent displacements of type `[f32; 3]`.
     pub tangents: Option<Index<accessor::Accessor>>,
 
-    /// UV texture co-ordinate displacements, keyed by `TEXCOORD_<n>` set index.
+    /// UV texture co-ordinate displacements of type `[f32; 2]`, keyed by
+    /// `TEXCOORD_<n>` set index.
     pub tex_coords: BTreeMap<u32, Index<accessor::Accessor>>,
 
-    /// Vertex color displacements, keyed by `COLOR_<n>` set index.
+    /// Vertex color displacements of type `[f32; 3]` or `[f32; 4]` (RGB or
+    /// RGBA), keyed by `COLOR_<n>` set index.
     pub colors: BTreeMap<u32, Index<accessor::Accessor>>,
 }
 
