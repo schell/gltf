@@ -459,7 +459,7 @@ where
     /// Visits the morph targets of the primitive.
     pub fn read_morph_targets(&self) -> util::ReadMorphTargets<'a, 's, F> {
         util::ReadMorphTargets {
-            index: 0,
+            iter: self.primitive.morph_targets(),
             reader: self.clone(),
         }
     }
@@ -475,7 +475,7 @@ where
         set: u32,
     ) -> util::ReadMorphTargetTexCoords<'a, 's, F> {
         util::ReadMorphTargetTexCoords {
-            index: 0,
+            iter: self.primitive.morph_targets(),
             set,
             reader: self.clone(),
         }
@@ -489,7 +489,7 @@ where
     /// that morph target does not define the requested `COLOR_<n>` set.
     pub fn read_morph_target_colors(&self, set: u32) -> util::ReadMorphTargetColors<'a, 's, F> {
         util::ReadMorphTargetColors {
-            index: 0,
+            iter: self.primitive.morph_targets(),
             set,
             reader: self.clone(),
         }

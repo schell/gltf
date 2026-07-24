@@ -106,7 +106,7 @@ pub struct ReadMorphTargets<'a, 's, F>
 where
     F: Clone + Fn(Buffer<'a>) -> Option<&'s [u8]>,
 {
-    pub(crate) index: usize,
+    pub(crate) iter: mesh::iter::MorphTargets<'a>,
     pub(crate) reader: mesh::Reader<'a, 's, F>,
 }
 
@@ -125,27 +125,22 @@ where
         Option<ReadTangentDisplacements<'s>>,
     );
     fn next(&mut self) -> Option<Self::Item> {
-        self.index += 1;
-        self.reader
-            .primitive
-            .morph_targets()
-            .nth(self.index - 1)
-            .map(|morph_target| {
-                let positions = morph_target
-                    .positions()
-                    .and_then(|accessor| Iter::new(accessor, self.reader.get_buffer_data.clone()));
-                let normals = morph_target
-                    .normals()
-                    .and_then(|accessor| Iter::new(accessor, self.reader.get_buffer_data.clone()));
-                let tangents = morph_target
-                    .tangents()
-                    .and_then(|accessor| Iter::new(accessor, self.reader.get_buffer_data.clone()));
-                (positions, normals, tangents)
-            })
+        self.iter.next().map(|morph_target| {
+            let positions = morph_target
+                .positions()
+                .and_then(|accessor| Iter::new(accessor, self.reader.get_buffer_data.clone()));
+            let normals = morph_target
+                .normals()
+                .and_then(|accessor| Iter::new(accessor, self.reader.get_buffer_data.clone()));
+            let tangents = morph_target
+                .tangents()
+                .and_then(|accessor| Iter::new(accessor, self.reader.get_buffer_data.clone()));
+            (positions, normals, tangents)
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.reader.primitive.morph_targets().size_hint()
+        self.iter.size_hint()
     }
 }
 
@@ -160,7 +155,7 @@ pub struct ReadMorphTargetTexCoords<'a, 's, F>
 where
     F: Clone + Fn(Buffer<'a>) -> Option<&'s [u8]>,
 {
-    pub(crate) index: usize,
+    pub(crate) iter: mesh::iter::MorphTargets<'a>,
     pub(crate) set: u32,
     pub(crate) reader: mesh::Reader<'a, 's, F>,
 }
@@ -177,28 +172,23 @@ where
     type Item = Option<ReadTexCoords<'s>>;
     fn next(&mut self) -> Option<Self::Item> {
         use accessor::DataType;
-        self.index += 1;
-        self.reader
-            .primitive
-            .morph_targets()
-            .nth(self.index - 1)
-            .map(|morph_target| {
-                morph_target
-                    .tex_coords(self.set)
-                    .and_then(|accessor| match accessor.data_type() {
-                        DataType::U8 => Iter::new(accessor, self.reader.get_buffer_data.clone())
-                            .map(ReadTexCoords::U8),
-                        DataType::U16 => Iter::new(accessor, self.reader.get_buffer_data.clone())
-                            .map(ReadTexCoords::U16),
-                        DataType::F32 => Iter::new(accessor, self.reader.get_buffer_data.clone())
-                            .map(ReadTexCoords::F32),
-                        _ => unreachable!(),
-                    })
-            })
+        self.iter.next().map(|morph_target| {
+            morph_target
+                .tex_coords(self.set)
+                .and_then(|accessor| match accessor.data_type() {
+                    DataType::U8 => Iter::new(accessor, self.reader.get_buffer_data.clone())
+                        .map(ReadTexCoords::U8),
+                    DataType::U16 => Iter::new(accessor, self.reader.get_buffer_data.clone())
+                        .map(ReadTexCoords::U16),
+                    DataType::F32 => Iter::new(accessor, self.reader.get_buffer_data.clone())
+                        .map(ReadTexCoords::F32),
+                    _ => unreachable!(),
+                })
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.reader.primitive.morph_targets().size_hint()
+        self.iter.size_hint()
     }
 }
 
@@ -213,7 +203,7 @@ pub struct ReadMorphTargetColors<'a, 's, F>
 where
     F: Clone + Fn(Buffer<'a>) -> Option<&'s [u8]>,
 {
-    pub(crate) index: usize,
+    pub(crate) iter: mesh::iter::MorphTargets<'a>,
     pub(crate) set: u32,
     pub(crate) reader: mesh::Reader<'a, 's, F>,
 }
@@ -231,34 +221,29 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         use accessor::DataType::{F32, U16, U8};
         use accessor::Dimensions::{Vec3, Vec4};
-        self.index += 1;
-        self.reader
-            .primitive
-            .morph_targets()
-            .nth(self.index - 1)
-            .map(|morph_target| {
-                morph_target.colors(self.set).and_then(|accessor| {
-                    match (accessor.data_type(), accessor.dimensions()) {
-                        (U8, Vec3) => Iter::new(accessor, self.reader.get_buffer_data.clone())
-                            .map(ReadColors::RgbU8),
-                        (U16, Vec3) => Iter::new(accessor, self.reader.get_buffer_data.clone())
-                            .map(ReadColors::RgbU16),
-                        (F32, Vec3) => Iter::new(accessor, self.reader.get_buffer_data.clone())
-                            .map(ReadColors::RgbF32),
-                        (U8, Vec4) => Iter::new(accessor, self.reader.get_buffer_data.clone())
-                            .map(ReadColors::RgbaU8),
-                        (U16, Vec4) => Iter::new(accessor, self.reader.get_buffer_data.clone())
-                            .map(ReadColors::RgbaU16),
-                        (F32, Vec4) => Iter::new(accessor, self.reader.get_buffer_data.clone())
-                            .map(ReadColors::RgbaF32),
-                        _ => unreachable!(),
-                    }
-                })
+        self.iter.next().map(|morph_target| {
+            morph_target.colors(self.set).and_then(|accessor| {
+                match (accessor.data_type(), accessor.dimensions()) {
+                    (U8, Vec3) => Iter::new(accessor, self.reader.get_buffer_data.clone())
+                        .map(ReadColors::RgbU8),
+                    (U16, Vec3) => Iter::new(accessor, self.reader.get_buffer_data.clone())
+                        .map(ReadColors::RgbU16),
+                    (F32, Vec3) => Iter::new(accessor, self.reader.get_buffer_data.clone())
+                        .map(ReadColors::RgbF32),
+                    (U8, Vec4) => Iter::new(accessor, self.reader.get_buffer_data.clone())
+                        .map(ReadColors::RgbaU8),
+                    (U16, Vec4) => Iter::new(accessor, self.reader.get_buffer_data.clone())
+                        .map(ReadColors::RgbaU16),
+                    (F32, Vec4) => Iter::new(accessor, self.reader.get_buffer_data.clone())
+                        .map(ReadColors::RgbaF32),
+                    _ => unreachable!(),
+                }
             })
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.reader.primitive.morph_targets().size_hint()
+        self.iter.size_hint()
     }
 }
 
