@@ -57,6 +57,7 @@ pub mod iter;
 pub mod util;
 
 use crate::{Accessor, Buffer, Document, Material};
+use std::collections;
 
 #[cfg(feature = "utils")]
 use crate::accessor;
@@ -106,6 +107,12 @@ pub struct MorphTarget<'a> {
 
     /// XYZ vertex tangent displacements.
     tangents: Option<Accessor<'a>>,
+
+    /// UV texture co-ordinate displacements, keyed by `TEXCOORD_<n>` set index.
+    tex_coords: collections::BTreeMap<u32, Accessor<'a>>,
+
+    /// Vertex color displacements, keyed by `COLOR_<n>` set index.
+    colors: collections::BTreeMap<u32, Accessor<'a>>,
 }
 
 /// Geometry to be rendered with the given material.
@@ -456,6 +463,37 @@ where
             reader: self.clone(),
         }
     }
+
+    /// Visits the `TEXCOORD_<n>` displacements of the morph targets of the
+    /// primitive for the given set index.
+    ///
+    /// Yields one `Option<util::ReadTexCoords>` per morph target, in the same
+    /// order the morph targets appear in the primitive. The item is `None` if
+    /// that morph target does not define the requested `TEXCOORD_<n>` set.
+    pub fn read_morph_target_tex_coords(
+        &self,
+        set: u32,
+    ) -> util::ReadMorphTargetTexCoords<'a, 's, F> {
+        util::ReadMorphTargetTexCoords {
+            index: 0,
+            set,
+            reader: self.clone(),
+        }
+    }
+
+    /// Visits the `COLOR_<n>` displacements of the morph targets of the
+    /// primitive for the given set index.
+    ///
+    /// Yields one `Option<util::ReadColors>` per morph target, in the same
+    /// order the morph targets appear in the primitive. The item is `None` if
+    /// that morph target does not define the requested `COLOR_<n>` set.
+    pub fn read_morph_target_colors(&self, set: u32) -> util::ReadMorphTargetColors<'a, 's, F> {
+        util::ReadMorphTargetColors {
+            index: 0,
+            set,
+            reader: self.clone(),
+        }
+    }
 }
 
 impl<'a> MorphTarget<'a> {
@@ -472,5 +510,29 @@ impl<'a> MorphTarget<'a> {
     /// Returns the XYZ vertex tangent displacements.
     pub fn tangents(&self) -> Option<Accessor<'a>> {
         self.tangents.clone()
+    }
+
+    /// Returns the `TEXCOORD_<n>` displacement accessor for the given set, if
+    /// present in this morph target.
+    pub fn tex_coords(&self, set: u32) -> Option<Accessor<'a>> {
+        self.tex_coords.get(&set).cloned()
+    }
+
+    /// Returns the `COLOR_<n>` displacement accessor for the given set, if
+    /// present in this morph target.
+    pub fn colors(&self, set: u32) -> Option<Accessor<'a>> {
+        self.colors.get(&set).cloned()
+    }
+
+    /// Returns an iterator over the `TEXCOORD_<n>` set indices present in this
+    /// morph target.
+    pub fn tex_coords_sets(&self) -> impl Iterator<Item = u32> + '_ {
+        self.tex_coords.keys().copied()
+    }
+
+    /// Returns an iterator over the `COLOR_<n>` set indices present in this
+    /// morph target.
+    pub fn colors_sets(&self) -> impl Iterator<Item = u32> + '_ {
+        self.colors.keys().copied()
     }
 }
