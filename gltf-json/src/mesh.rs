@@ -209,6 +209,18 @@ pub struct MorphTarget {
     pub colors: BTreeMap<u32, Index<accessor::Accessor>>,
 }
 
+impl Default for MorphTarget {
+    fn default() -> Self {
+        MorphTarget {
+            positions: None,
+            normals: None,
+            tangents: None,
+            tex_coords: BTreeMap::new(),
+            colors: BTreeMap::new(),
+        }
+    }
+}
+
 impl Serialize for MorphTarget {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
